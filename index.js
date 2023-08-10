@@ -1,7 +1,6 @@
 require('dotenv').config();
 
-const LocalAuth = require('./auth/LocalAuth.js');
-const { Client } = require('whatsapp-web.js');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 var qrcode = require('qrcode-terminal');
 
 const zap = new Client({
