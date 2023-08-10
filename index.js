@@ -1,9 +1,21 @@
 require('dotenv').config();
 
+const LocalAuth = require('./auth/LocalAuth.js');
 const { Client } = require('whatsapp-web.js');
 var qrcode = require('qrcode-terminal');
 
-const zap = new Client();
+const zap = new Client({
+    authStrategy: new LocalAuth(),
+    restartOnAuthFail: true,
+    puppeteer: {
+        headless: true,
+        args: ['--no-sandbox'],
+        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        ignoreHTTPSErrors: true,
+        args: ['--disable-dev-shm-usage'],
+    },
+    // authStrategy: 'session',
+});
 zap.initialize();
 
 zap.on('loading_screen', (percent, message) => {
@@ -33,14 +45,18 @@ zap.on('message', (message) => {
     } else if (message.body.includes('clear logs')) {
         console.clear();
         message.reply('Logs limpos');
+    } else if (message.body.includes('Documentation')) {
+        message.reply("Envie uma requisição POST com o JSON {\"phone\":Ex: 5511999999999,\"message\":\"Mensagem\"}");
+    } else if (message.body.includes('Desconect')) {
+        zap.destroy().then(() => {
+            console.log('Desconectado');
+        })
     }
 })
 
 const notifyZap = async (phone, message) => {
     try {
-        const to = `${phone}@c.us`;
-        console.log('Enviando para: ', to, ' Mensagem: ', message);
-        await zap.sendMessage(to, message);
+        await zap.sendMessage(phone, message);
         return 'Mensagem enviada com sucesso';
     } catch (err) {
         console.log('FALHA AO ENVIAR MENSAGEM:' + err);
@@ -60,7 +76,22 @@ const initializeServer = async () => {
 
     router.post('/', (req, res) => {
         const { phone, message } = req.body;
-        notifyZap(phone, message).then((msg) => {
+        if (!whatsappRead) {
+            res.json({
+                message: 'Servidor não está pronto para receber mensagens',
+            });
+            return;
+        }
+
+        if (!phone || !message) {
+            res.json({
+                message: 'Parâmetros inválidos',
+            });
+            return;
+        }
+
+        const cID = `${phone}@c.us`;
+        notifyZap(cID, message).then((msg) => {
             res.json({
                 message: msg
             })
