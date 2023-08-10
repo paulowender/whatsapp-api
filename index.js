@@ -40,7 +40,7 @@ const notifyZap = async (phone, message) => {
     try {
         const to = `${phone}@c.us`;
         console.log('Enviando para: ', to, ' Mensagem: ', message);
-        await zap.sendMessage(phone, message);
+        await zap.sendMessage(to, message);
         return 'Mensagem enviada com sucesso';
     } catch (err) {
         console.log('FALHA AO ENVIAR MENSAGEM:' + err);
