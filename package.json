@@ -1,0 +1,28 @@
+{
+  "name": "whatsapp-api",
+  "version": "1.0.0",
+  "description": "API para envio e recebimento de mensagens para whatsapp",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "API",
+    "Whatsapp"
+  ],
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node": "^20.2.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "author": "Paulo Wender",
+  "license": "ISC"
+}
