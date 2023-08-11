@@ -13,7 +13,6 @@ const zap = new Client({
         ignoreHTTPSErrors: true,
         args: ['--disable-dev-shm-usage'],
     },
-    // authStrategy: 'session',
 });
 zap.initialize();
 
