@@ -13,7 +13,7 @@ npm install
 * Execute o projeto
 
 ```bash
-npm run start
+npm start
 ```
 * Faça a leitura do QR code quando for exibido
 
