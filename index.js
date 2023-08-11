@@ -73,7 +73,7 @@ const initializeServer = async () => {
     app.use(express.json());
     app.use(cors());
 
-    router.post('/', (req, res) => {
+    router.post('/send', (req, res) => {
         const { phone, message } = req.body;
         if (!whatsappRead) {
             res.json({
