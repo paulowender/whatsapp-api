@@ -18,7 +18,7 @@ zap.initialize();
 
 zap.on('loading_screen', (percent, message) => {
     console.clear();
-    console.log('LOADING ...', percent, message);
+    console.log('LOADING ...', `${percent}%`, message);
 });
 
 zap.on('qr', (qr) => {
@@ -31,7 +31,10 @@ zap.on('qr', (qr) => {
 var whatsappRead = false;
 zap.on('ready', () => {
     console.clear();
-    console.log('WHATSAPP PRONTO, INICIANDO API...');
+    console.log('WHATSAPP INICIADO');
+    console.log('NAME: ', zap.info.pushname);
+    console.log('PHONE: ', zap.info.wid.user);
+    zap.sendMessage(zap.info.wid._serialized, 'API iniciada com sucesso!');
     whatsappRead = true;
     initializeServer();
 })
@@ -72,7 +75,16 @@ const initializeServer = async () => {
     app.use(express.json());
     app.use(cors());
 
-    router.post('/send', (req, res) => {
+    const secretKey = process.env.SECRET_KEY;
+    const guard = (req, res, next) => {
+        if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer' && req.headers.authorization.split(' ')[1] === secretKey) {
+            next();
+        } else {
+            res.status(401).json({ message: 'Token inválido' });
+        }
+    }
+
+    router.post('/send', guard, (req, res) => {
         const { phone, message } = req.body;
         if (!whatsappRead) {
             res.json({
