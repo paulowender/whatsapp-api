@@ -91,6 +91,7 @@ const initializeServer = async (zap) => {
   app.use('/', router);
 
   const port = 3000;
+  console.clear();
   app.listen(port, () => console.log(`WHASAPP API listening on port ${port}!`));
 }
 
