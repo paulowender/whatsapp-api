@@ -1,115 +1,92 @@
 require('dotenv').config();
+const venom = require('venom-bot');
 
-const { Client, LocalAuth } = require('whatsapp-web.js');
-var qrcode = require('qrcode-terminal');
-
-const zap = new Client({
-    authStrategy: new LocalAuth(),
-    restartOnAuthFail: true,
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox'],
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        ignoreHTTPSErrors: true,
-        args: ['--disable-dev-shm-usage'],
-    },
-});
-zap.initialize();
-
-zap.on('loading_screen', (percent, message) => {
-    console.clear();
-    console.log('LOADING ...', `${percent}%`, message);
-});
-
-zap.on('qr', (qr) => {
-    // Generate and scan this code with your phone
-    console.clear();
-    console.log('LEIA O QR RECEBIDO COM O DISPOSITIVO ONDE ESTÁ O WHATSAPP QUE IRÁ ENVIAR AS MENSAGEMS');
-    qrcode.generate(qr, { small: true });
-})
-
-var whatsappRead = false;
-zap.on('ready', () => {
-    console.clear();
-    console.log('WHATSAPP INICIADO');
-    console.log('NAME: ', zap.info.pushname);
-    console.log('PHONE: ', zap.info.wid.user);
-    zap.sendMessage(zap.info.wid._serialized, 'API iniciada com sucesso!');
-    whatsappRead = true;
-    initializeServer();
-})
-
-zap.on('message', (message) => {
-    if (message.body.includes('API TEST') || message.body.includes('ping')) {
-        message.reply('pong');
-        console.log('MENSAGEM RECEBIDA: ', message);
-    } else if (message.body.includes('clear logs')) {
-        console.clear();
-        message.reply('Logs limpos');
-    } else if (message.body.includes('Documentation')) {
-        message.reply("Envie uma requisição POST com o JSON {\"phone\":Ex: 5511999999999,\"message\":\"Mensagem\"}");
-    } else if (message.body.includes('Desconect')) {
-        zap.destroy().then(() => {
-            console.log('Desconectado');
-        })
-    }
-})
-
-const notifyZap = async (phone, message) => {
-    try {
-        await zap.sendMessage(phone, message);
-        return 'Mensagem enviada com sucesso';
-    } catch (err) {
-        console.log('FALHA AO ENVIAR MENSAGEM:' + err);
-        return err;
-    }
+const notifyZap = async (zap, phone, message) => {
+  return zap
+    .sendText(phone, message)
+    .then((_) => {
+      return 'Mensagem enviada com sucesso';
+    })
+    .catch((erro) => {
+      console.error('FALHA AO ENVIAR MENSAGEM: ', erro);
+      return erro;
+    });
 }
 
 const cors = require('cors');
 const express = require('express');
 
+const initializeServer = async (zap) => {
+  const app = express();
+  const router = express.Router();
+  app.use(express.json());
+  app.use(cors());
 
-const initializeServer = async () => {
-    const app = express();
-    const router = express.Router();
-    app.use(express.json());
-    app.use(cors());
+  const buttons = [
+    {
+      "buttonText": {
+        "displayText": "Text of Button 1"
+      }
+    },
+    {
+      "buttonText": {
+        "displayText": "Text of Button 2"
+      }
+    }
+  ];
 
-    const secretKey = process.env.SECRET_KEY;
-    const guard = (req, res, next) => {
-        if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer' && req.headers.authorization.split(' ')[1] === secretKey) {
-            next();
-        } else {
-            res.status(401).json({ message: 'Token inválido' });
-        }
+  zap.onMessage(async (message) => {
+    if (message.body === 'Hi' && !message.isGroupMsg) {
+      // Send Messages with Buttons Reply
+      await zap.sendButtons(message.from, 'Title', buttons, 'Description')
+        .then((result) => {
+          console.log('Result: ', result); //return object success
+        })
+        .catch((erro) => {
+          console.error('Error when sending: ', erro); //return object error
+        });
+    }
+  })
+
+  const secretKey = process.env.SECRET_KEY;
+  const guard = (req, res, next) => {
+    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer' && req.headers.authorization.split(' ')[1] === secretKey) {
+      next();
+    } else {
+      res.status(401).json({ message: 'Token inválido' });
+    }
+  }
+
+  router.post('/send', guard, (req, res) => {
+    const { phone, message } = req.body;
+
+    if (!phone || !message) {
+      res.json({
+        message: 'Parâmetros inválidos',
+      });
+      return;
     }
 
-    router.post('/send', guard, (req, res) => {
-        const { phone, message } = req.body;
-        if (!whatsappRead) {
-            res.json({
-                message: 'Servidor não está pronto para receber mensagens',
-            });
-            return;
-        }
-
-        if (!phone || !message) {
-            res.json({
-                message: 'Parâmetros inválidos',
-            });
-            return;
-        }
-
-        const cID = `${phone}@c.us`;
-        notifyZap(cID, message).then((msg) => {
-            res.json({
-                message: msg
-            })
-        })
+    const cID = `${phone}@c.us`;
+    notifyZap(zap, cID, message).then((msg) => {
+      res.json({
+        message: msg
+      })
     })
+  })
 
-    app.use('/', router);
+  app.use('/', router);
 
-    const port = 3000;
-    app.listen(port, () => console.log(`WHASAPP API listening on port ${port}!`));
+  const port = 3000;
+  app.listen(port, () => console.log(`WHASAPP API listening on port ${port}!`));
 }
+
+
+venom
+  .create({
+    session: 'Papelaria Realce'
+  })
+  .then(initializeServer)
+  .catch((erro) => {
+    console.log(erro);
+  });
