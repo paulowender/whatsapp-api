@@ -25,20 +25,21 @@ const initializeServer = async (zap) => {
   const buttons = [
     {
       "buttonText": {
-        "displayText": "Text of Button 1"
+        "displayText": "Limpar Logs"
       }
     },
     {
       "buttonText": {
-        "displayText": "Text of Button 2"
+        "displayText": "Parar Servidor"
       }
     }
   ];
 
+  const secretKey = process.env.SECRET_KEY;
   zap.onMessage(async (message) => {
-    if (message.body === 'Hi' && !message.isGroupMsg) {
+    if (message.body === 'Menu' && !message.isGroupMsg) {
       // Send Messages with Buttons Reply
-      await zap.sendButtons(message.from, 'Title', buttons, 'Description')
+      await zap.sendButtons(message.from, 'Menu', buttons, 'Selecione uma opção')
         .then((result) => {
           console.log('Result: ', result); //return object success
         })
@@ -46,9 +47,21 @@ const initializeServer = async (zap) => {
           console.error('Error when sending: ', erro); //return object error
         });
     }
+    const clearLogs = message.body === buttons[1]["buttonText"]["displayText"];
+    if (clearLogs) {
+      console.clear();
+    }
+
+    // const stopServer = message.body === buttons[2]["buttonText"]["displayText"];
+    // if (stopServer) {
+    //   notifyZap(zap, message.from, 'Informe o token de segurança:');
+    // }
+
+    // if (message.body === secretKey) {
+    //   notifyZap('Função indisponível');
+    // }
   })
 
-  const secretKey = process.env.SECRET_KEY;
   const guard = (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer' && req.headers.authorization.split(' ')[1] === secretKey) {
       next();
@@ -84,7 +97,7 @@ const initializeServer = async (zap) => {
 
 venom
   .create({
-    session: 'Papelaria Realce'
+    session: 'localSession' // Session Name
   })
   .then(initializeServer)
   .catch((erro) => {
