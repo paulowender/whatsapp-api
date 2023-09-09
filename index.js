@@ -16,7 +16,7 @@ const notifyZap = async (zap, phone, message) => {
 const cors = require('cors');
 const express = require('express');
 
-const initializeServer = async (zap) => {
+const initializeServer = async (whatsappSession) => {
   const app = express();
   const router = express.Router();
   app.use(express.json());
@@ -36,10 +36,10 @@ const initializeServer = async (zap) => {
   ];
 
   const secretKey = process.env.SECRET_KEY;
-  zap.onMessage(async (message) => {
+  whatsappSession.onMessage(async (message) => {
     if (message.body === 'Menu' && !message.isGroupMsg) {
       // Send Messages with Buttons Reply
-      await zap.sendButtons(message.from, 'Menu', buttons, 'Selecione uma opção')
+      await whatsappSession.sendButtons(message.from, 'Menu', buttons, 'Selecione uma opção')
         .then((result) => {
           console.log('Result: ', result); //return object success
         })
@@ -54,7 +54,7 @@ const initializeServer = async (zap) => {
 
     // const stopServer = message.body === buttons[2]["buttonText"]["displayText"];
     // if (stopServer) {
-    //   notifyZap(zap, message.from, 'Informe o token de segurança:');
+    //   notifyZap(whatsappSession, message.from, 'Informe o token de segurança:');
     // }
 
     // if (message.body === secretKey) {
@@ -81,11 +81,18 @@ const initializeServer = async (zap) => {
     }
 
     const cID = `${phone}@c.us`;
-    notifyZap(zap, cID, message).then((msg) => {
+    notifyZap(whatsappSession, cID, message).then((msg) => {
       res.json({
         message: msg
       })
     })
+  })
+
+  router.get('/api', (req, res) => {
+    res.json({
+      "name": "Whastapp-API",
+      "version": "1.2",
+    });
   })
 
   app.use('/', router);
@@ -95,11 +102,12 @@ const initializeServer = async (zap) => {
   app.listen(port, () => console.log(`WHASAPP API listening on port ${port}!`));
 }
 
-
+let sessionName = process.env.SESSION_NAME;
+if (!sessionName) {
+  sessionName = 'localSession';
+}
 venom
-  .create({
-    session: 'localSession' // Session Name
-  })
+  .create({ session: sessionName })
   .then(initializeServer)
   .catch((erro) => {
     console.log(erro);
